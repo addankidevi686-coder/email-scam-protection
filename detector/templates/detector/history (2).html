@@ -1,0 +1,106 @@
+{% extends 'detector/base.html' %}
+{% block title %}History - ScamGuard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-card { transition: transform 0.15s; }
+    .history-card:hover { transform: translateY(-2px); }
+    .preview-text { font-size: 0.88rem; color: #555; line-height: 1.5; }
+    .badge-spam { background:#ef233c; color:#fff; border-radius:20px; padding:3px 12px; font-size:0.78rem; }
+    .badge-safe { background:#06d6a0; color:#fff; border-radius:20px; padding:3px 12px; font-size:0.78rem; }
+    .filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h2 class="fw-bold mb-1"><i class="fas fa-history me-2"></i>Email Check History</h2>
+        <p class="mb-0 opacity-75">All emails you have checked — {{ checks|length }} record(s)</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <!-- FILTER + DELETE ALL -->
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'history' %}" class="btn btn-outline-secondary btn-sm filter-btn {% if filter_by == 'all' %}active{% endif %}">
+                <i class="fas fa-list me-1"></i>All
+            </a>
+            <a href="{% url 'history' %}?filter=spam" class="btn btn-outline-danger btn-sm filter-btn {% if filter_by == 'spam' %}active{% endif %}">
+                <i class="fas fa-ban me-1"></i>Spam Only
+            </a>
+            <a href="{% url 'history' %}?filter=safe" class="btn btn-outline-success btn-sm filter-btn {% if filter_by == 'safe' %}active{% endif %}">
+                <i class="fas fa-check-circle me-1"></i>Safe Only
+            </a>
+        </div>
+        {% if checks %}
+        <form method="post" action="{% url 'delete_all_history' %}" onsubmit="return confirm('Delete ALL history? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-trash-alt me-1"></i>Delete All
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if checks %}
+    <div class="row g-3">
+        {% for check in checks %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card history-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        {% if check.prediction_result == 'spam' %}
+                        <span class="badge-spam"><i class="fas fa-ban me-1"></i>SPAM</span>
+                        {% else %}
+                        <span class="badge-safe"><i class="fas fa-check me-1"></i>SAFE</span>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">{{ check.date_checked|date:"M d, Y H:i" }}</small>
+                </div>
+
+                <p class="preview-text mb-3 flex-grow-1">{{ check.email_preview }}</p>
+
+                <div class="d-flex justify-content-between align-items-center mt-auto">
+                    <div>
+                        <small class="text-muted conf-label">Confidence:</small>
+                        <span class="fw-bold {% if check.prediction_result == 'spam' %}text-danger{% else %}text-success{% endif %} ms-1">
+                            {{ check.confidence_score }}%
+                        </span>
+                    </div>
+                    <a href="{% url 'delete_history' check.pk %}"
+                       class="btn btn-sm btn-outline-danger"
+                       onclick="return confirm('Delete this record?');">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </div>
+
+                <div class="progress mt-2" style="height:5px; border-radius:5px;">
+                    <div class="progress-bar {% if check.prediction_result == 'spam' %}bg-danger{% else %}bg-success{% endif %}"
+                         style="width:{{ check.confidence_score }}%;"></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- EMPTY STATE -->
+    <div class="text-center py-5">
+        <div style="font-size:4rem; opacity:0.2; margin-bottom:1rem;">📭</div>
+        <h4 class="fw-bold text-muted">No records found</h4>
+        <p class="text-muted">
+            {% if filter_by != 'all' %}
+                No {{ filter_by }} emails in your history. <a href="{% url 'history' %}">View all</a>
+            {% else %}
+                You haven't checked any emails yet.
+            {% endif %}
+        </p>
+        <a href="{% url 'check_email' %}" class="btn btn-primary mt-2">
+            <i class="fas fa-search me-2"></i>Check Your First Email
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

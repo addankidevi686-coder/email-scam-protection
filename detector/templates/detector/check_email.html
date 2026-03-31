@@ -1,0 +1,324 @@
+{% extends 'detector/base.html' %}
+{% block title %}Check Email - ScamGuard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-box {
+        border-radius: 16px;
+        padding: 1.5rem;
+        animation: fadeIn 0.5s ease;
+    }
+    .result-spam { background: linear-gradient(135deg, #ef233c22, #d6282822); border: 2px solid #ef233c; }
+    .result-safe { background: linear-gradient(135deg, #06d6a022, #02809022); border: 2px solid #06d6a0; }
+    .big-icon { font-size: 3rem; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .email-preview-box {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1rem;
+        font-size: 0.9rem;
+        line-height: 1.7;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .loading-spinner { display: none; }
+    .spinner-border-sm { width: 1.2rem; height: 1.2rem; }
+    .badge-result-spam { background: #ef233c; color: #fff; font-size: 1rem; padding: 0.5rem 1.2rem; border-radius: 20px; }
+    .badge-result-safe { background: #06d6a0; color: #fff; font-size: 1rem; padding: 0.5rem 1.2rem; border-radius: 20px; }
+    .conf-label { font-size: 0.85rem; color: #6c757d; }
+    textarea#emailText { resize: vertical; }
+    .tab-btn { cursor: pointer; border-radius: 10px; padding: 0.5rem 1rem; font-weight: 500; }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h2 class="fw-bold mb-1"><i class="fas fa-envelope-open-text me-2"></i>Check Email for Spam</h2>
+        <p class="mb-0 opacity-75">Paste or upload email content to analyze it with our AI system</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <!-- INPUT COLUMN -->
+        <div class="col-lg-6">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-4"><i class="fas fa-keyboard me-2" style="color:var(--primary);"></i>Email Input</h5>
+
+                <!-- Tabs -->
+                <div class="d-flex gap-2 mb-3">
+                    <span class="tab-btn active" id="tabPaste" onclick="switchTab('paste')">
+                        <i class="fas fa-paste me-1"></i>Paste Text
+                    </span>
+                    <span class="tab-btn" id="tabFile" onclick="switchTab('file')">
+                        <i class="fas fa-file-upload me-1"></i>Upload File
+                    </span>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" id="emailForm" novalidate>
+                    {% csrf_token %}
+                    <!-- Paste section -->
+                    <div id="sectionPaste">
+                        <div class="mb-3">
+                            {{ form.email_text }}
+                            {% if form.email_text.errors %}
+                            <div class="text-danger small mt-1">{{ form.email_text.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="pasteSpam()">
+                                <i class="fas fa-bug me-1"></i>Try Spam Sample
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="pasteSafe()">
+                                <i class="fas fa-check me-1"></i>Try Safe Sample
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearText()">
+                                <i class="fas fa-trash me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File section -->
+                    <div id="sectionFile" style="display:none;">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Upload .txt Email File</label>
+                            {{ form.email_file }}
+                            <div class="form-text">Supported: .txt files only</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1 py-2" id="submitBtn">
+                            <i class="fas fa-search me-2"></i>Check Email
+                        </button>
+                        <button type="button" class="btn btn-outline-primary py-2" id="ajaxBtn" onclick="ajaxCheck()">
+                            <span class="loading-spinner spinner-border spinner-border-sm me-1" id="ajaxSpinner"></span>
+                            <i class="fas fa-bolt me-1" id="ajaxIcon"></i> Quick
+                        </button>
+                    </div>
+                </form>
+
+                <!-- AJAX Result -->
+                <div id="ajaxResult" class="mt-4" style="display:none;"></div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card p-4 mt-4">
+                <h6 class="fw-bold mb-3"><i class="fas fa-lightbulb me-2" style="color:#f59e0b;"></i>Spam Warning Signs</h6>
+                <ul class="list-unstyled mb-0 small text-muted">
+                    <li class="mb-1"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Urgency words like "Act Now!", "Limited Time!"</li>
+                    <li class="mb-1"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Promises of free money or prizes</li>
+                    <li class="mb-1"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Requests for personal/banking information</li>
+                    <li class="mb-1"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Poor grammar and spelling</li>
+                    <li class="mb-1"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Suspicious links or attachments</li>
+                    <li><i class="fas fa-exclamation-triangle text-danger me-2"></i>Unknown or misspelled sender addresses</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- RESULT COLUMN -->
+        <div class="col-lg-6">
+            {% if result %}
+            <div class="card p-4 mb-4 result-box result-{{ result }}">
+                <div class="text-center mb-3">
+                    {% if result == 'spam' %}
+                        <div class="big-icon mb-2">❌</div>
+                        <h3 class="fw-bold text-danger mb-1">SPAM / SCAM EMAIL</h3>
+                        <span class="badge-result-spam">⚠️ Dangerous - Do NOT click any links</span>
+                    {% else %}
+                        <div class="big-icon mb-2">✅</div>
+                        <h3 class="fw-bold mb-1" style="color:#028090;">SAFE EMAIL</h3>
+                        <span class="badge-result-safe">✅ Looks legitimate</span>
+                    {% endif %}
+                </div>
+
+                <div class="confidence-bar mt-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="conf-label fw-semibold">Confidence Score</span>
+                        <span class="fw-bold {% if result == 'spam' %}text-danger{% else %}text-success{% endif %}">{{ confidence }}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar {% if result == 'spam' %}bg-danger{% else %}bg-success{% endif %}"
+                             role="progressbar"
+                             style="width: {{ confidence }}%"
+                             aria-valuenow="{{ confidence }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+
+                {% if result == 'spam' %}
+                <div class="alert alert-danger small mt-3 mb-0 py-2">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    <strong>Recommendation:</strong> Delete this email immediately. Do not click any links or share personal information.
+                </div>
+                {% else %}
+                <div class="alert alert-success small mt-3 mb-0 py-2">
+                    <i class="fas fa-check-circle me-1"></i>
+                    <strong>Note:</strong> Always verify sender identity even for safe emails. Stay vigilant!
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Highlighted Text -->
+            {% if highlighted_text %}
+            <div class="card p-4 mb-4">
+                <h6 class="fw-bold mb-3"><i class="fas fa-highlighter me-2" style="color:#7209b7;"></i>Email Analysis
+                    <span class="badge bg-warning text-dark ms-2" style="font-size:0.7rem;">Highlighted keywords</span>
+                </h6>
+                <div class="email-preview-box">{{ highlighted_text|safe }}</div>
+            </div>
+            {% endif %}
+
+            <!-- History Note -->
+            <div class="card p-3">
+                <p class="small text-muted mb-0">
+                    <i class="fas fa-save me-1 text-primary"></i>
+                    This result has been saved to your <a href="{% url 'history' %}" class="text-primary">history</a>.
+                    Check it anytime!
+                </p>
+            </div>
+
+            {% else %}
+            <!-- Placeholder -->
+            <div class="card p-5 text-center h-100 d-flex flex-column justify-content-center align-items-center">
+                <div style="font-size:4rem; opacity:0.15; margin-bottom:1rem;">🔍</div>
+                <h5 class="fw-bold text-muted">Awaiting Analysis</h5>
+                <p class="text-muted small">Paste or upload an email on the left, then click "Check Email" to get your result here.</p>
+                <div class="row g-2 mt-2 w-100">
+                    <div class="col-6">
+                        <div class="card p-2 text-center" style="border:2px dashed #06d6a0;">
+                            <i class="fas fa-check-circle fa-2x mb-1" style="color:#06d6a0;"></i>
+                            <small class="fw-semibold text-success">Safe Email</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card p-2 text-center" style="border:2px dashed #ef233c;">
+                            <i class="fas fa-ban fa-2x mb-1" style="color:#ef233c;"></i>
+                            <small class="fw-semibold text-danger">Spam Email</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tab) {
+    if (tab === 'paste') {
+        document.getElementById('sectionPaste').style.display = 'block';
+        document.getElementById('sectionFile').style.display = 'none';
+        document.getElementById('tabPaste').classList.add('active');
+        document.getElementById('tabFile').classList.remove('active');
+    } else {
+        document.getElementById('sectionPaste').style.display = 'none';
+        document.getElementById('sectionFile').style.display = 'block';
+        document.getElementById('tabFile').classList.add('active');
+        document.getElementById('tabPaste').classList.remove('active');
+    }
+}
+
+function clearText() {
+    document.getElementById('emailText').value = '';
+}
+
+function pasteSpam() {
+    document.getElementById('emailText').value = `Congratulations! You have been selected as the winner of our exclusive lottery draw! 
+You have WON $1,000,000 USD. This is FREE money! Act NOW - limited time offer!
+
+To CLAIM your prize money, click here immediately and provide your bank account details, 
+credit card number and social security number. This offer expires in 24 hours!
+
+Do not miss this INCREDIBLE DEAL! Work from home and earn $5000 per day with NO cost to you!
+GUARANTEED income! Risk free investment opportunity!
+
+Dear Friend, I am a Nigerian prince and I need your help transferring $10 billion dollars.
+You will receive 30% commission. Please provide your personal information urgently!
+
+UNSUBSCRIBE or click below to verify your account. Your account suspended!`;
+}
+
+function pasteSafe() {
+    document.getElementById('emailText').value = `Hi John,
+
+I hope you're doing well. I wanted to follow up on our meeting last Thursday regarding 
+the Q3 project proposal.
+
+Could you please review the attached document and share your feedback by end of week?
+The team is looking forward to your input before we finalize the presentation.
+
+Also, please remember that our next team standup is scheduled for Monday at 10 AM.
+
+Looking forward to hearing from you.
+
+Best regards,
+Sarah
+Project Manager`;
+}
+
+function ajaxCheck() {
+    const text = document.getElementById('emailText').value.trim();
+    if (!text) {
+        alert('Please enter email content first.');
+        return;
+    }
+
+    const spinner = document.getElementById('ajaxSpinner');
+    const icon = document.getElementById('ajaxIcon');
+    const resultDiv = document.getElementById('ajaxResult');
+
+    spinner.style.display = 'inline-block';
+    icon.style.display = 'none';
+    resultDiv.style.display = 'none';
+
+    fetch('/ajax/check/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ email_text: text })
+    })
+    .then(r => r.json())
+    .then(data => {
+        spinner.style.display = 'none';
+        icon.style.display = 'inline';
+        if (data.error) {
+            resultDiv.innerHTML = `<div class="alert alert-danger small">${data.error}</div>`;
+        } else {
+            const isSpam = data.result === 'spam';
+            const color = isSpam ? '#ef233c' : '#06d6a0';
+            const emoji = isSpam ? '❌' : '✅';
+            const label = isSpam ? 'SPAM DETECTED' : 'SAFE EMAIL';
+            resultDiv.innerHTML = `
+                <div class="result-box result-${data.result}">
+                    <div class="text-center mb-2">
+                        <span style="font-size:2rem;">${emoji}</span>
+                        <h5 class="fw-bold mt-1 mb-1" style="color:${color}">${label}</h5>
+                        <span style="font-size:0.85rem; color:#666;">Confidence: <strong style="color:${color}">${data.confidence}%</strong></span>
+                    </div>
+                    <div class="progress" style="height:8px; border-radius:8px;">
+                        <div class="progress-bar" style="width:${data.confidence}%; background:${color};" role="progressbar"></div>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0 text-center">✔ Saved to history</p>
+                </div>
+            `;
+        }
+        resultDiv.style.display = 'block';
+    })
+    .catch(err => {
+        spinner.style.display = 'none';
+        icon.style.display = 'inline';
+        resultDiv.innerHTML = `<div class="alert alert-danger small">Error: ${err.message}</div>`;
+        resultDiv.style.display = 'block';
+    });
+}
+</script>
+{% endblock %}

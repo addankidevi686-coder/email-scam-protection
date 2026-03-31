@@ -1,0 +1,237 @@
+{% extends 'detector/base.html' %}
+{% block title %}Dashboard Overview - ScamGuard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-radius: 18px;
+        padding: 1.5rem;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        border: none;
+    }
+    .stat-card .bg-icon {
+        position: absolute;
+        right: -10px;
+        bottom: -10px;
+        font-size: 5rem;
+        opacity: 0.15;
+    }
+    .stat-card .stat-num {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+    .stat-card .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.85;
+        margin-top: 0.25rem;
+    }
+    .card-blue   { background: linear-gradient(135deg, #4361ee, #3a0ca3); }
+    .card-red    { background: linear-gradient(135deg, #ef233c, #b5001f); }
+    .card-green  { background: linear-gradient(135deg, #06d6a0, #028090); }
+    .card-purple { background: linear-gradient(135deg, #7209b7, #560bad); }
+    .chart-card  { border-radius: 18px; padding: 1.5rem; }
+    .chart-wrap  { position: relative; height: 300px; }
+    canvas       { max-width: 100%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h2 class="fw-bold mb-1"><i class="fas fa-chart-pie me-2"></i>Dashboard Overview</h2>
+        <p class="mb-0 opacity-75">System-wide statistics and email analysis insights</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+
+    <!-- STAT CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card stat-card card-blue">
+                <div class="stat-num">{{ stats.total_users }}</div>
+                <div class="stat-label"><i class="fas fa-users me-1"></i>Total Users</div>
+                <div class="bg-icon"><i class="fas fa-users"></i></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card card-purple">
+                <div class="stat-num">{{ stats.total_checks }}</div>
+                <div class="stat-label"><i class="fas fa-envelope me-1"></i>Emails Checked</div>
+                <div class="bg-icon"><i class="fas fa-envelope"></i></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card card-red">
+                <div class="stat-num">{{ stats.total_spam }}</div>
+                <div class="stat-label"><i class="fas fa-ban me-1"></i>Spam Detected</div>
+                <div class="bg-icon"><i class="fas fa-ban"></i></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card card-green">
+                <div class="stat-num">{{ stats.total_safe }}</div>
+                <div class="stat-label"><i class="fas fa-check-circle me-1"></i>Safe Emails</div>
+                <div class="bg-icon"><i class="fas fa-check-circle"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="row g-4 mb-4">
+
+        <!-- PIE CHART: Spam vs Safe -->
+        <div class="col-md-5">
+            <div class="card chart-card h-100">
+                <h6 class="fw-bold mb-3"><i class="fas fa-chart-pie me-2" style="color:var(--primary)"></i>Spam vs Safe Distribution</h6>
+                <div class="chart-wrap d-flex align-items-center justify-content-center">
+                    <canvas id="pieChart"></canvas>
+                </div>
+                <div class="d-flex justify-content-center gap-4 mt-3">
+                    <span><span style="display:inline-block;width:12px;height:12px;background:#ef233c;border-radius:3px;margin-right:5px;"></span><small>Spam ({{ stats.spam_pct }}%)</small></span>
+                    <span><span style="display:inline-block;width:12px;height:12px;background:#06d6a0;border-radius:3px;margin-right:5px;"></span><small>Safe ({{ stats.safe_pct }}%)</small></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BAR CHART: Daily checks (last 7 days) -->
+        <div class="col-md-7">
+            <div class="card chart-card h-100">
+                <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar me-2" style="color:var(--primary)"></i>Email Checks — Last 7 Days</h6>
+                <div class="chart-wrap">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- USER TABLE + LINE CHART -->
+    <div class="row g-4">
+
+        <!-- LINE CHART: Cumulative -->
+        <div class="col-md-7">
+            <div class="card chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-chart-line me-2" style="color:var(--primary)"></i>Spam vs Safe — Last 7 Days Trend</h6>
+                <div class="chart-wrap">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOP USERS TABLE -->
+        <div class="col-md-5">
+            <div class="card chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-trophy me-2" style="color:#f59e0b;"></i>Most Active Users</h6>
+                {% if stats.top_users %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead><tr><th>User</th><th class="text-center">Checked</th><th class="text-center">Spam</th><th class="text-center">Safe</th></tr></thead>
+                        <tbody>
+                        {% for u in stats.top_users %}
+                        <tr>
+                            <td><i class="fas fa-user-circle text-muted me-1"></i>{{ u.username }}</td>
+                            <td class="text-center fw-bold">{{ u.total }}</td>
+                            <td class="text-center text-danger">{{ u.spam }}</td>
+                            <td class="text-center text-success">{{ u.safe }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small text-center py-3">No data yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const daily   = {{ stats.daily_json|safe }};
+    const labels  = daily.map(d => d.date);
+    const spamDay = daily.map(d => d.spam);
+    const safeDay = daily.map(d => d.safe);
+
+    // PIE
+    new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Spam', 'Safe'],
+            datasets: [{
+                data: [{{ stats.total_spam }}, {{ stats.total_safe }}],
+                backgroundColor: ['#ef233c', '#06d6a0'],
+                borderWidth: 0,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // BAR
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Spam', data: spamDay, backgroundColor: '#ef233c', borderRadius: 6 },
+                { label: 'Safe', data: safeDay, backgroundColor: '#06d6a0', borderRadius: 6 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // LINE
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Spam',
+                    data: spamDay,
+                    borderColor: '#ef233c',
+                    backgroundColor: 'rgba(239,35,60,0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4
+                },
+                {
+                    label: 'Safe',
+                    data: safeDay,
+                    borderColor: '#06d6a0',
+                    backgroundColor: 'rgba(6,214,160,0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+</script>
+{% endblock %}

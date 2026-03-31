@@ -1,0 +1,79 @@
+{% extends 'detector/base.html' %}
+{% block title %}Login - ScamGuard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div style="width:70px;height:70px;background:linear-gradient(135deg,#4361ee,#7209b7);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.8rem;color:#fff;">
+                        <i class="fas fa-sign-in-alt"></i>
+                    </div>
+                    <h2 class="fw-bold mb-1">Welcome Back</h2>
+                    <p class="text-muted small">Log in to your ScamGuard account</p>
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user text-muted"></i></span>
+                            {{ form.username }}
+                        </div>
+                        {% if form.username.errors %}
+                        <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+                            {{ form.password }}
+                            <button class="btn btn-outline-secondary" type="button" id="togglePwd" tabindex="-1">
+                                <i class="fas fa-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}
+                        <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger small py-2">
+                        <i class="fas fa-exclamation-triangle me-1"></i>{{ form.non_field_errors.0 }}
+                    </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted small mb-0">Don't have an account?
+                        <a href="{% url 'signup' %}" class="text-primary fw-semibold text-decoration-none">Register here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('togglePwd').addEventListener('click', function() {
+    const pwd = document.querySelector('input[name="password"]');
+    const icon = document.getElementById('eyeIcon');
+    if (pwd.type === 'password') {
+        pwd.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        pwd.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+});
+// Add form-control class to auth form fields
+document.querySelectorAll('input[name="username"], input[name="password"]').forEach(el => {
+    el.classList.add('form-control');
+});
+</script>
+{% endblock %}

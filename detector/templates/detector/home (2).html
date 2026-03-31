@@ -1,0 +1,198 @@
+{% extends 'detector/base.html' %}
+{% block title %}Home - Email Scam Protection System{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<section class="py-5" style="background: linear-gradient(135deg, #3a0ca3 0%, #4361ee 50%, #7209b7 100%); color:#fff; min-height: 420px; display:flex; align-items:center;">
+    <div class="container text-center py-4">
+        <div class="mb-4">
+            <span style="background:rgba(255,255,255,0.15); border-radius:50%; width:90px; height:90px; display:inline-flex; align-items:center; justify-content:center; font-size:2.5rem;">
+                <i class="fas fa-shield-alt"></i>
+            </span>
+        </div>
+        <h1 class="fw-bold mb-3" style="font-size:2.8rem; letter-spacing:-1px;">Email Scam Protection System</h1>
+        <p class="lead mb-4" style="max-width:600px; margin:0 auto; opacity:0.9; font-size:1.1rem;">
+            AI-powered spam detection that keeps your inbox safe. Paste any suspicious email and get an instant analysis using Machine Learning.
+        </p>
+        {% if user.is_authenticated %}
+        <a href="{% url 'check_email' %}" class="btn btn-light btn-lg fw-semibold px-5 me-3" style="border-radius:12px;">
+            <i class="fas fa-search me-2"></i>Check an Email
+        </a>
+        <a href="{% url 'history' %}" class="btn btn-outline-light btn-lg px-4" style="border-radius:12px;">
+            <i class="fas fa-history me-2"></i>View History
+        </a>
+        {% else %}
+        <a href="{% url 'signup' %}" class="btn btn-light btn-lg fw-semibold px-5 me-3" style="border-radius:12px;">
+            <i class="fas fa-rocket me-2"></i>Get Started Free
+        </a>
+        <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg px-4" style="border-radius:12px;">
+            <i class="fas fa-sign-in-alt me-2"></i>Login
+        </a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- STATS (for logged in users) -->
+{% if user.is_authenticated and stats.total %}
+<section class="container my-5">
+    <h4 class="fw-bold mb-4 text-center"><i class="fas fa-chart-bar me-2" style="color:var(--primary)"></i>Your Statistics</h4>
+    <div class="row g-3 justify-content-center">
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-4">
+                <div style="font-size:2rem; font-weight:700; color:var(--primary);">{{ stats.total }}</div>
+                <div class="text-muted small mt-1"><i class="fas fa-envelope me-1"></i>Total Checked</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-4">
+                <div style="font-size:2rem; font-weight:700; color:#ef233c;">{{ stats.spam }}</div>
+                <div class="text-muted small mt-1"><i class="fas fa-ban me-1"></i>Spam Detected</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-4">
+                <div style="font-size:2rem; font-weight:700; color:#06d6a0;">{{ stats.safe }}</div>
+                <div class="text-muted small mt-1"><i class="fas fa-check-circle me-1"></i>Safe Emails</div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- HOW IT WORKS -->
+<section class="container my-5">
+    <h2 class="text-center fw-bold mb-2">How It Works</h2>
+    <p class="text-center text-muted mb-5">Our system uses Machine Learning to analyze email patterns and detect spam</p>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card p-4 text-center h-100">
+                <div style="width:64px;height:64px;background:linear-gradient(135deg,#4361ee,#7209b7);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.6rem;color:#fff;">
+                    <i class="fas fa-paste"></i>
+                </div>
+                <h5 class="fw-bold">1. Paste Email</h5>
+                <p class="text-muted small">Copy and paste the email content you want to analyze. You can also upload a .txt file.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 text-center h-100">
+                <div style="width:64px;height:64px;background:linear-gradient(135deg,#7209b7,#f72585);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.6rem;color:#fff;">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h5 class="fw-bold">2. AI Analysis</h5>
+                <p class="text-muted small">Our ML model (Naive Bayes/Logistic Regression) analyzes text patterns, keywords, and structure.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 text-center h-100">
+                <div style="width:64px;height:64px;background:linear-gradient(135deg,#06d6a0,#028090);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.6rem;color:#fff;">
+                    <i class="fas fa-poll"></i>
+                </div>
+                <h5 class="fw-bold">3. Instant Result</h5>
+                <p class="text-muted small">Get a clear result — Safe ✅ or Spam ❌ — with a confidence score and highlighted keywords.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section style="background:linear-gradient(135deg,#f0f2ff,#e8ecff);" class="py-5">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-2">Key Features</h2>
+        <p class="text-center text-muted mb-5">Everything you need to stay protected from email scams</p>
+        <div class="row g-4">
+            {% for feature in features %}{% endfor %}
+            <div class="col-md-6 col-lg-3">
+                <div class="card p-4 h-100">
+                    <i class="fas fa-robot fa-2x mb-3" style="color:#4361ee;"></i>
+                    <h6 class="fw-bold">ML-Powered Detection</h6>
+                    <p class="text-muted small mb-0">Trained on thousands of real spam emails using Naive Bayes algorithm.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card p-4 h-100">
+                    <i class="fas fa-highlighter fa-2x mb-3" style="color:#7209b7;"></i>
+                    <h6 class="fw-bold">Keyword Highlighting</h6>
+                    <p class="text-muted small mb-0">Suspicious words are highlighted so you can see exactly why an email is flagged.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card p-4 h-100">
+                    <i class="fas fa-history fa-2x mb-3" style="color:#06d6a0;"></i>
+                    <h6 class="fw-bold">Full History</h6>
+                    <p class="text-muted small mb-0">Track all your previously checked emails with dates and results.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card p-4 h-100">
+                    <i class="fas fa-lock fa-2x mb-3" style="color:#ef233c;"></i>
+                    <h6 class="fw-bold">Secure & Private</h6>
+                    <p class="text-muted small mb-0">Your email data is stored securely and only accessible to you.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SPAM TYPES -->
+<section class="container my-5">
+    <h2 class="text-center fw-bold mb-2">Common Scam Types We Detect</h2>
+    <p class="text-center text-muted mb-5">Our system is trained to identify these and many more spam categories</p>
+    <div class="row g-3">
+        {% for item in scam_types %}{% endfor %}
+        <div class="col-6 col-md-4">
+            <div class="card p-3 d-flex flex-row align-items-center gap-3">
+                <span style="font-size:1.6rem;">🎰</span>
+                <div><strong class="small">Lottery Scams</strong><br><span class="text-muted" style="font-size:0.78rem;">Fake prize winners</span></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card p-3 d-flex flex-row align-items-center gap-3">
+                <span style="font-size:1.6rem;">🏦</span>
+                <div><strong class="small">Banking Phishing</strong><br><span class="text-muted" style="font-size:0.78rem;">Fake bank alerts</span></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card p-3 d-flex flex-row align-items-center gap-3">
+                <span style="font-size:1.6rem;">💰</span>
+                <div><strong class="small">Investment Fraud</strong><br><span class="text-muted" style="font-size:0.78rem;">Get-rich-quick schemes</span></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card p-3 d-flex flex-row align-items-center gap-3">
+                <span style="font-size:1.6rem;">📦</span>
+                <div><strong class="small">Delivery Scams</strong><br><span class="text-muted" style="font-size:0.78rem;">Fake package notices</span></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card p-3 d-flex flex-row align-items-center gap-3">
+                <span style="font-size:1.6rem;">🌍</span>
+                <div><strong class="small">Nigerian Prince</strong><br><span class="text-muted" style="font-size:0.78rem;">Advance fee fraud</span></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card p-3 d-flex flex-row align-items-center gap-3">
+                <span style="font-size:1.6rem;">💊</span>
+                <div><strong class="small">Health/Product Spam</strong><br><span class="text-muted" style="font-size:0.78rem;">Fake products/services</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+{% if not user.is_authenticated %}
+<section class="container my-5">
+    <div class="card text-center p-5" style="background:linear-gradient(135deg,#4361ee,#7209b7); border:none; color:#fff;">
+        <h3 class="fw-bold mb-3">Ready to Protect Your Inbox?</h3>
+        <p class="mb-4 opacity-75">Join thousands of users who trust ScamGuard to keep their emails safe.</p>
+        <div>
+            <a href="{% url 'signup' %}" class="btn btn-light fw-semibold px-5 me-3" style="border-radius:10px;">
+                <i class="fas fa-user-plus me-2"></i>Create Free Account
+            </a>
+            <a href="{% url 'login' %}" class="btn btn-outline-light px-4" style="border-radius:10px;">
+                <i class="fas fa-sign-in-alt me-2"></i>Login
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
